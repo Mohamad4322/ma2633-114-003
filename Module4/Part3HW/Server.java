@@ -3,6 +3,7 @@ package Module4.Part3HW;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
@@ -35,6 +36,7 @@ public class Server {
             System.out.println("Closing server socket");
         }
     }
+
     /**
      * Callback passed to ServerThread to inform Server they're ready to receive data
      * @param sClient
@@ -44,6 +46,7 @@ public class Server {
         connectedClients.put(sClient.getClientId(), sClient);
         relay(String.format("*User[%s] connected*", sClient.getClientId()), null);
     }
+
     /**
      * Takes a ServerThread and removes them from the Server
      * Adding the synchronized keyword ensures that only one thread can execute
@@ -74,7 +77,6 @@ public class Server {
      */
     protected synchronized void relay(String message, ServerThread sender) {
         if (sender != null && processCommand(message, sender)) {
-
             return;
         }
         // let's temporarily use the thread id as the client identifier to
@@ -108,21 +110,33 @@ public class Server {
      * @return true if it was a command, false otherwise
      */
     private boolean processCommand(String message, ServerThread sender) {
-        if(sender == null){
+        if (sender == null) {
             return false;
         }
         System.out.println("Checking command: " + message);
-        // disconnect
-        if ("/disconnect".equalsIgnoreCase(message)) {
+
+        // Coin Toss Command: Flip a coin
+        if ("/flip".equalsIgnoreCase(message) || "/toss".equalsIgnoreCase(message)) {
+            // Randomly select heads or tails
+            String result = new Random().nextBoolean() ? "heads" : "tails";
+            String response = String.format("User[%s] flipped a coin and got %s.", sender.getClientId(), result);
+            relay(response, null); // Broadcast the result to all clients
+            return true;
+        }
+
+        // Disconnect command
+        else if ("/disconnect".equalsIgnoreCase(message)) {
             ServerThread removedClient = connectedClients.get(sender.getClientId());
             if (removedClient != null) {
                 disconnect(removedClient);
             }
             return true;
         }
-        // add more "else if" as needed
+
         return false;
     }
+//ma2633 || 10/07/2024
+
 
     public static void main(String[] args) {
         System.out.println("Server Starting");
