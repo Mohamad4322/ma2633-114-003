@@ -1,33 +1,28 @@
 package Project;
 
+// ConnectionPayload.java - Handles connection-specific payloads
 public class ConnectionPayload extends Payload {
-    private String clientName;
-    private boolean isConnect;
+    private String roomName;
 
-    public ConnectionPayload(){
-        setPayloadType(PayloadType.CLIENT_CONNECT);
-    }
-    
-    public String getClientName() {
-        return clientName;
+    // Constructor
+    public ConnectionPayload(String clientId, String message, PayloadType type, String roomName) {
+        super(clientId, message, type);
+        this.roomName = roomName;
     }
 
-    public void setClientName(String clientName) {
-        this.clientName = clientName;
+    // Getter for room name
+    public String getRoomName() {
+        return roomName;
     }
 
-    public boolean isConnect() {
-        return isConnect;
+    // Setter for room name
+    public void setRoomName(String roomName) {
+        this.roomName = roomName;
     }
-
-    public void setConnect(boolean isConnect) {
-        this.isConnect = isConnect;
-    }
-
-    
 
     @Override
-    public String toString(){
-        return super.toString() + String.format(" Client Name [%s] Status [%s]", clientName, isConnect?"connect":"disconnect");
+    public String toString() {
+        return "ConnectionPayload [clientId=" + getClientId() + ", message=" + getMessage() + ", type=" + getType() + ", roomName=" + roomName + "]";
     }
 }
+
