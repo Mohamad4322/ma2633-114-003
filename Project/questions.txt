@@ -1,0 +1,10 @@
+What is the capital of France?;Geography;Paris,Berlin,Madrid,London;Paris
+Which planet is known as the Red Planet?;Science;Earth,Mars,Venus,Jupiter;Mars
+Who wrote 'To Kill a Mockingbird'?;Literature;Harper Lee,Mark Twain,J.K. Rowling,Ernest Hemingway;Harper Lee
+What is the largest ocean on Earth?;Geography;Atlantic,Indian,Arctic,Pacific;Pacific
+Who painted the Mona Lisa?;Art;Leonardo da Vinci,Michelangelo,Van Gogh,Picasso;Leonardo da Vinci
+In which year did the Titanic sink?;History;1905,1912,1918,1923;1912
+What is the chemical symbol for water?;Science;H2O,CO2,NaCl,CH4;H2O
+Who discovered penicillin?;Medicine;Alexander Fleming,Marie Curie,Isaac Newton,Albert Einstein;Alexander Fleming
+What is the currency of Japan?;Economics;Yen,Won,Euro,Dollar;Yen
+Who is known as the Father of Computers?;Technology;Charles Babbage,Alan Turing,Bill Gates,Steve Jobs;Charles Babbage
