@@ -1,4 +1,5 @@
 package Project;
+
 public class ClientData {
     private String name;
     private ServerThread serverThread;

@@ -1,4 +1,5 @@
 package Project;
+
 public enum PayloadType {
     CONNECT,
     DISCONNECT,
@@ -7,5 +8,7 @@ public enum PayloadType {
     ANSWER,
     POINTS,
     START_GAME,
-    TIME
+    TIME,
+    NOTIFICATION,
+    RESET_POINTS 
 }

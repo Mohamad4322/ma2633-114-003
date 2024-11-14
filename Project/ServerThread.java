@@ -1,4 +1,5 @@
 package Project;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -63,6 +64,9 @@ public class ServerThread extends Thread {
             case START_GAME:
                 handleStartGamePayload(payload);
                 break;
+            case NOTIFICATION:
+                handleNotificationPayload(payload);
+                break;
             default:
                 System.err.println("Unknown payload type: " + payload.getType());
                 break;
@@ -92,6 +96,12 @@ public class ServerThread extends Thread {
         } else {
             System.err.println("Client is not in a GameRoom or the room is invalid.");
         }
+    }
+
+    // Handle notification payload
+    private void handleNotificationPayload(Payload payload) {
+        // For now, simply print out the notification
+        System.out.println("Notification: " + payload.getMessage());
     }
 
     // Method to send a payload to the client

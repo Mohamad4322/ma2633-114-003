@@ -1,10 +1,13 @@
 package Project;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Client {
     private String clientId;
@@ -12,6 +15,7 @@ public class Client {
     private ObjectOutputStream out;
     private ObjectInputStream in;
     private BufferedReader console;
+    private Map<String, Integer> playerPoints; // Map to store player points
 
     // Constructor
     public Client(String host, int port) {
@@ -20,6 +24,7 @@ public class Client {
             out = new ObjectOutputStream(socket.getOutputStream());
             in = new ObjectInputStream(socket.getInputStream());
             console = new BufferedReader(new InputStreamReader(System.in));
+            playerPoints = new HashMap<>(); // Initialize the player points map
             System.out.println("Connected to server at " + host + ":" + port);
         } catch (IOException e) {
             System.err.println("Unable to connect to server: " + e.getMessage());
@@ -105,15 +110,37 @@ public class Client {
                     } else if (response instanceof PointsPayload) {
                         PointsPayload pointsPayload = (PointsPayload) response;
                         System.out.println("Player " + pointsPayload.getClientId() + " has " + pointsPayload.getPoints() + " points.");
+                        // Update the local player points map
+                        playerPoints.put(pointsPayload.getClientId(), pointsPayload.getPoints());
                     } else if (response instanceof Payload) {
                         Payload payload = (Payload) response;
-                        System.out.println(payload.getMessage());
+                        if (payload.getType() == PayloadType.RESET_POINTS) {
+                            resetPlayerPoints(); // Handle resetting points
+                        } else if (payload.getType() == PayloadType.NOTIFICATION) {
+                            handleNotification(payload);
+                        } else {
+                            System.out.println(payload.getMessage());
+                        }
+                    } else if (response instanceof TimePayload) {
+                        TimePayload timePayload = (TimePayload) response;
+                        System.out.println("Time remaining: " + timePayload.getTimeRemaining() / 1000 + " seconds");
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {
                 System.err.println("Connection to server lost: " + e.getMessage());
             }
         }
+    }
+
+    // Method to reset player points locally
+    private void resetPlayerPoints() {
+        playerPoints.clear();
+        System.out.println("All player points have been reset.");
+    }
+
+    // Method to handle notification payloads
+    private void handleNotification(Payload payload) {
+        System.out.println("Notification: " + payload.getMessage());
     }
 
     // Main method to start the client

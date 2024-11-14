@@ -16,16 +16,19 @@ public class GameRoom {
     private int currentRound;
     private Question currentQuestion;
     private Timer roundTimer;
+    private List<ClientData> answeredClients; // Track clients who answered
+    private long questionStartTime; // Track when the current question was broadcasted
 
     // Constructor
     public GameRoom(String roomName) {
         this.roomName = roomName;
         this.clients = new ArrayList<>();
         this.questionList = new ArrayList<>();
+        this.answeredClients = new ArrayList<>();
         this.currentRound = 0;
         this.roundTimer = new Timer();
         // Load questions with hardcoded path
-        loadQuestions("C:\\Users\\Mohamad\\Desktop\\ma2633-114-003\\Project\\questions.txt");
+        loadQuestions("Project/questions.txt");
     }
 
     // Method to load questions from a file
@@ -52,6 +55,15 @@ public class GameRoom {
         }
     }
 
+    // Method to notify all players when a player locks in an answer
+    public void notifyPlayersAnswerLocked(ClientData player) {
+        String message = player.getName() + " has locked in an answer.";
+        Payload payload = new Payload("Server", message, PayloadType.NOTIFICATION);
+        for (ClientData client : clients) {
+            client.getServerThread().sendPayload(payload);
+        }
+    }
+
     // Method to start the first round
     public void startFirstRound() {
         if (!questionList.isEmpty()) {
@@ -67,6 +79,8 @@ public class GameRoom {
     private void startRound() {
         if (!questionList.isEmpty()) {
             currentQuestion = questionList.remove((int) (Math.random() * questionList.size()));
+            answeredClients.clear(); // Reset the list of clients who have answered
+            questionStartTime = System.currentTimeMillis(); // Set the start time for this question
             broadcastQuestionToClients(currentQuestion);
             startRoundTimer();
         } else {
@@ -86,7 +100,7 @@ public class GameRoom {
 
     // Method to start the round timer with periodic updates to clients
     private void startRoundTimer() {
-        long roundDuration = 30000; // 30 seconds per round
+        long roundDuration = 50000; // 50 seconds per round
         long updateInterval = 5000; // Update every 5 seconds
 
         roundTimer.scheduleAtFixedRate(new TimerTask() {
@@ -96,7 +110,8 @@ public class GameRoom {
             public void run() {
                 timeRemaining -= updateInterval;
                 if (timeRemaining > 0) {
-                    broadcastTimeUpdate(timeRemaining);
+                    // Commenting out time update broadcast for now
+                    // broadcastTimeUpdate(timeRemaining);
                 } else {
                     System.out.println("Round timer expired.");
                     endRound();
@@ -106,39 +121,64 @@ public class GameRoom {
         }, 0, updateInterval);
     }
 
-    // Method to broadcast time updates to all clients
-    private void broadcastTimeUpdate(long timeRemaining) {
-        for (ClientData client : clients) {
-            TimePayload timePayload = new TimePayload("Server", "Time Update", PayloadType.TIME, timeRemaining);
-            client.getServerThread().sendPayload(timePayload);
-        }
-        System.out.println("Broadcasting time update to clients: " + timeRemaining / 1000 + " seconds remaining");
-    }
-    // ma2633 || 11/12
-
     // Method to process a player's answer
     public void processAnswer(ClientData client, String answer) {
-        if (currentQuestion != null && currentQuestion.getAnswerOptions().contains(answer)) {
-            if (answer.equalsIgnoreCase(currentQuestion.getCorrectAnswer())) {
-                client.addPoints(10); // Award points to the player
-                System.out.println(client.getName() + " answered correctly and earned 10 points.");
-            } else {
-                System.out.println(client.getName() + " answered incorrectly.");
+        if (currentQuestion != null) {
+            // Get the answer options
+            List<String> options = currentQuestion.getAnswerOptions();
+
+            // Determine the index based on the provided letter (A, B, C, D)
+            int answerIndex = -1;
+            if (answer.length() == 1) {
+                char answerChar = answer.toUpperCase().charAt(0);
+                if (answerChar >= 'A' && answerChar < 'A' + options.size()) {
+                    answerIndex = answerChar - 'A';
+                }
             }
-            checkAllPlayersAnswered();
+
+            if (answerIndex >= 0 && answerIndex < options.size()) {
+                String selectedAnswer = options.get(answerIndex);
+                long responseTime = System.currentTimeMillis() - questionStartTime; // Calculate response time
+
+                if (selectedAnswer.equalsIgnoreCase(currentQuestion.getCorrectAnswer())) {
+                    int pointsAwarded = calculatePoints(responseTime); // Calculate points based on response time
+                    client.addPoints(pointsAwarded);
+                    System.out.println(client.getName() + " answered correctly and earned " + pointsAwarded + " points.");
+                } else {
+                    System.out.println(client.getName() + " answered incorrectly.");
+                }
+                notifyPlayersAnswerLocked(client); // Notify all players that this player has locked in an answer
+
+                // Add the client to the list of those who have answered
+                if (!answeredClients.contains(client)) {
+                    answeredClients.add(client);
+                }
+
+                // Check if all players have answered
+                checkAllPlayersAnswered();
+            } else {
+                System.out.println("Invalid answer provided by " + client.getName());
+            }
         } else {
-            System.out.println("Invalid answer provided by " + client.getName());
+            System.out.println("No current question available for " + client.getName());
+        }
+    }
+
+    // Method to calculate points based on response time
+    private int calculatePoints(long responseTime) {
+        if (responseTime <= 10000) { // If answered within 10 seconds
+            return 20; // Fast response, higher points
+        } else if (responseTime <= 30000) { // If answered within 30 seconds
+            return 10; // Medium response, standard points
+        } else {
+            return 5; // Slow response, fewer points
         }
     }
 
     // Method to check if all players have answered
     private void checkAllPlayersAnswered() {
-        boolean allAnswered = true;
-        for (ClientData client : clients) {
-            // In a real implementation, we would track if each player answered
-            // For simplicity, assuming all players answer in sequence for now
-        }
-        if (allAnswered) {
+        if (answeredClients.size() == clients.size()) {
+            System.out.println("All players have answered. Ending the round.");
             endRound();
         }
     }
@@ -172,6 +212,7 @@ public class GameRoom {
             client.getServerThread().sendPayload(pointsPayload);
         }
         resetGame();
+        shiftToReadyPhase();
     }
 
     // Method to reset the game
@@ -181,15 +222,53 @@ public class GameRoom {
         System.out.println("Game reset. Ready for a new session.");
     }
 
+    // Method to shift all players back to ready phase
+    private void shiftToReadyPhase() {
+        for (ClientData client : clients) {
+            client.setPoints(0); // Reset player points
+            Payload readyPayload = new Payload("Server", "Game is ready for a new session", PayloadType.NOTIFICATION);
+            client.getServerThread().sendPayload(readyPayload);
+        }
+        System.out.println("Players are shifted back to the ready phase.");
+    }
+
     // Method to add a client to the room
     public void addClient(ClientData client) {
         clients.add(client);
         System.out.println(client.getName() + " joined the room " + roomName);
+
+        // Sync the current game state if a game is in progress
+        if (currentRound > 0 && currentQuestion != null) {
+            // Send the current question to the newly joined client
+            QAPayload questionPayload = new QAPayload("Server", "Current Question", PayloadType.QUESTION, currentQuestion.getQuestionText(), currentQuestion.getAnswerOptions().toArray(new String[0]));
+            client.getServerThread().sendPayload(questionPayload);
+
+            // Send the remaining time for the current round
+            long timeRemaining = calculateRemainingTime();
+            TimePayload timePayload = new TimePayload("Server", "Time Update", PayloadType.TIME, timeRemaining);
+            client.getServerThread().sendPayload(timePayload);
+
+            // Sync the points for all clients to the newly joined client
+            syncPointsToClient(client);
+        }
     }
 
     // Method to remove a client from the room
     public void removeClient(ClientData client) {
         clients.remove(client);
         System.out.println(client.getName() + " left the room " + roomName);
+    }
+
+    // Method to sync points to a specific client
+    private void syncPointsToClient(ClientData client) {
+        for (ClientData existingClient : clients) {
+            PointsPayload pointsPayload = new PointsPayload("Server", "Points Update", PayloadType.POINTS, existingClient.getPoints());
+            client.getServerThread().sendPayload(pointsPayload);
+        }
+    }
+
+    // Placeholder method to calculate remaining time for the current round
+    private long calculateRemainingTime() {
+        return 20000; // Example: 20 seconds remaining
     }
 }
