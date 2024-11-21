@@ -58,11 +58,20 @@ public class ServerThread extends Thread {
             case CONNECT:
                 handleConnectPayload(payload);
                 break;
+            case CREATE_ROOM:
+                handleCreateRoomPayload(payload);
+                break;
+            case JOIN_ROOM:
+                handleJoinRoomPayload(payload);
+                break;
             case ANSWER:
                 handleAnswerPayload(payload);
                 break;
             case START_GAME:
                 handleStartGamePayload(payload);
+                break;
+            case READY:
+                handleReadyPayload(payload);
                 break;
             case NOTIFICATION:
                 handleNotificationPayload(payload);
@@ -81,6 +90,41 @@ public class ServerThread extends Thread {
         System.out.println(clientData.getName() + " connected and joined the Lobby");
     }
 
+    // Handle create room payload
+    private void handleCreateRoomPayload(Payload payload) {
+        String roomName = payload.getMessage();
+        boolean roomCreated = server.createRoom(roomName, this);
+        if (roomCreated) {
+            joinRoom(roomName);
+            System.out.println(clientData.getName() + " created and joined the room: " + roomName);
+        } else {
+            sendPayload(new Payload("Server", "Room creation failed. Room already exists.", PayloadType.NOTIFICATION));
+        }
+    }
+
+    // Handle join room payload
+    private void handleJoinRoomPayload(Payload payload) {
+        String roomName = payload.getMessage();
+        GameRoom room = server.getRoom(roomName);
+        if (room != null) {
+            joinRoom(roomName);
+            System.out.println(clientData.getName() + " joined the room: " + roomName);
+        } else {
+            sendPayload(new Payload("Server", "Room not found. Please try again.", PayloadType.NOTIFICATION));
+        }
+    }
+
+    // Helper method to join a room
+    private void joinRoom(String roomName) {
+        if (currentRoom != null) {
+            currentRoom.removeClient(clientData);
+        }
+        currentRoom = server.getRoom(roomName);
+        if (currentRoom != null) {
+            currentRoom.addClient(clientData);
+        }
+    }
+
     // Handle answer payload
     private void handleAnswerPayload(Payload payload) {
         if (currentRoom != null && currentRoom instanceof GameRoom) {
@@ -95,6 +139,13 @@ public class ServerThread extends Thread {
             ((GameRoom) currentRoom).startFirstRound();
         } else {
             System.err.println("Client is not in a GameRoom or the room is invalid.");
+        }
+    }
+
+    // Handle ready payload
+    private void handleReadyPayload(Payload payload) {
+        if (currentRoom != null && currentRoom instanceof GameRoom) {
+            ((GameRoom) currentRoom).markClientReady(clientData);
         }
     }
 
