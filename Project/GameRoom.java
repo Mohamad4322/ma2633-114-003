@@ -13,6 +13,7 @@ public class GameRoom {
     private String roomName;
     private List<Question> questionList;
     private List<ClientData> clients;
+    private List<ClientData> readyClients; // Track clients who are ready
     private int currentRound;
     private Question currentQuestion;
     private Timer roundTimer;
@@ -23,6 +24,7 @@ public class GameRoom {
     public GameRoom(String roomName) {
         this.roomName = roomName;
         this.clients = new ArrayList<>();
+        this.readyClients = new ArrayList<>();
         this.questionList = new ArrayList<>();
         this.answeredClients = new ArrayList<>();
         this.currentRound = 0;
@@ -33,6 +35,7 @@ public class GameRoom {
 
     // Method to load questions from a file
     public void loadQuestions(String filePath) {
+        questionList.clear(); // Clear any previous questions
         try (BufferedReader reader = new BufferedReader(new FileReader(filePath))) {
             String line;
             while ((line = reader.readLine()) != null) {
@@ -64,8 +67,27 @@ public class GameRoom {
         }
     }
 
+    // Method to mark a client as ready
+    public void markClientReady(ClientData client) {
+        if (!readyClients.contains(client)) {
+            readyClients.add(client);
+            System.out.println(client.getName() + " is marked as ready.");
+
+            // If all clients in the room are ready, start the game
+            if (readyClients.size() == clients.size()) {
+                System.out.println("All players are ready. Starting the game.");
+                startFirstRound();
+            }
+        }
+    }
+
     // Method to start the first round
     public void startFirstRound() {
+        // Reload questions if the question list is empty
+        if (questionList.isEmpty()) {
+            loadQuestions("Project/questions.txt");
+        }
+        
         if (!questionList.isEmpty()) {
             currentRound++;
             System.out.println("Starting round " + currentRound); // Debug message
@@ -218,12 +240,14 @@ public class GameRoom {
     // Method to reset the game
     private void resetGame() {
         currentRound = 0;
-        questionList.clear();
+        questionList.clear(); // Clear previous questions
+        loadQuestions("Project/questions.txt"); // Reload questions for the next session
         System.out.println("Game reset. Ready for a new session.");
     }
 
     // Method to shift all players back to ready phase
     private void shiftToReadyPhase() {
+        readyClients.clear();
         for (ClientData client : clients) {
             client.setPoints(0); // Reset player points
             Payload readyPayload = new Payload("Server", "Game is ready for a new session", PayloadType.NOTIFICATION);
@@ -256,6 +280,7 @@ public class GameRoom {
     // Method to remove a client from the room
     public void removeClient(ClientData client) {
         clients.remove(client);
+        readyClients.remove(client);
         System.out.println(client.getName() + " left the room " + roomName);
     }
 

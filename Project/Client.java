@@ -58,6 +58,24 @@ public class Client {
                         Payload payload = new Payload(clientId, "Connecting", PayloadType.CONNECT);
                         sendPayload(payload);
                     }
+                } else if (input.startsWith("/create")) {
+                    String[] parts = input.split(" ", 2);
+                    if (parts.length == 2) {
+                        String roomName = parts[1];
+                        Payload payload = new Payload(clientId, roomName, PayloadType.CREATE_ROOM);
+                        sendPayload(payload);
+                    } else {
+                        System.out.println("Usage: /create [roomName]");
+                    }
+                } else if (input.startsWith("/join")) {
+                    String[] parts = input.split(" ", 2);
+                    if (parts.length == 2) {
+                        String roomName = parts[1];
+                        Payload payload = new Payload(clientId, roomName, PayloadType.JOIN_ROOM);
+                        sendPayload(payload);
+                    } else {
+                        System.out.println("Usage: /join [roomName]");
+                    }
                 } else if (input.startsWith("/answer")) {
                     String[] parts = input.split(" ", 2);
                     if (parts.length == 2) {
@@ -73,6 +91,14 @@ public class Client {
                     } else {
                         Payload payload = new Payload(clientId, "Start Game", PayloadType.START_GAME);
                         sendPayload(payload);
+                    }
+                } else if (input.startsWith("/ready")) {
+                    if (clientId == null) {
+                        System.out.println("Please set your name first using /name [clientName]");
+                    } else {
+                        Payload payload = new Payload(clientId, "Ready", PayloadType.READY);
+                        sendPayload(payload);
+                        System.out.println("You are marked as ready.");
                     }
                 } else {
                     System.out.println("Unknown command.");

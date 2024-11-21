@@ -8,6 +8,9 @@ public enum PayloadType {
     ANSWER,
     POINTS,
     START_GAME,
+    CREATE_ROOM,  
+    JOIN_ROOM,    
+    READY,        
     TIME,
     NOTIFICATION,
     RESET_POINTS 

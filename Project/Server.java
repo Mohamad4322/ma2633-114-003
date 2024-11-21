@@ -1,20 +1,26 @@
 package Project;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Server {
     private int port;
     private List<ServerThread> serverThreads;
+    private Map<String, GameRoom> gameRooms; // Map to store all game rooms by room name
     private GameRoom lobby;
 
     // Constructor
     public Server(int port) {
         this.port = port;
         this.serverThreads = new ArrayList<>();
+        this.gameRooms = new HashMap<>();
         this.lobby = new GameRoom("Lobby");
+        gameRooms.put("Lobby", lobby); // Initialize the Lobby
     }
 
     // Method to start the server
@@ -31,6 +37,24 @@ public class Server {
         } catch (IOException e) {
             System.err.println("Error starting server: " + e.getMessage());
         }
+    }
+
+    // Method to create a new room
+    public boolean createRoom(String roomName, ServerThread creatorThread) {
+        if (!gameRooms.containsKey(roomName)) {
+            GameRoom newRoom = new GameRoom(roomName);
+            gameRooms.put(roomName, newRoom);
+            System.out.println("Room created: " + roomName);
+            return true;
+        } else {
+            System.out.println("Room with name " + roomName + " already exists.");
+            return false;
+        }
+    }
+
+    // Method to get a room by name
+    public GameRoom getRoom(String roomName) {
+        return gameRooms.get(roomName);
     }
 
     // Method to broadcast messages to all clients in the same room
