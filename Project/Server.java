@@ -4,21 +4,22 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class Server {
     private int port;
-    private List<ServerThread> serverThreads;
+    private List<ServerThread> serverThreads; // List of all active client threads
     private Map<String, GameRoom> gameRooms; // Map to store all game rooms by room name
     private GameRoom lobby;
 
     // Constructor
     public Server(int port) {
         this.port = port;
-        this.serverThreads = new ArrayList<>();
-        this.gameRooms = new HashMap<>();
+        this.serverThreads = Collections.synchronizedList(new ArrayList<>()); // Thread-safe list
+        this.gameRooms = new ConcurrentHashMap<>(); // Concurrent map to store rooms
         this.lobby = new GameRoom("Lobby");
         gameRooms.put("Lobby", lobby); // Initialize the Lobby
     }
@@ -59,16 +60,20 @@ public class Server {
 
     // Method to broadcast messages to all clients in the same room
     public void broadcastToRoom(GameRoom room, Payload payload) {
-        for (ServerThread serverThread : serverThreads) {
-            if (serverThread.getCurrentRoom() == room) {
-                serverThread.sendPayload(payload);
+        synchronized (serverThreads) {
+            for (ServerThread serverThread : serverThreads) {
+                if (serverThread.getCurrentRoom() == room) {
+                    serverThread.sendPayload(payload);
+                }
             }
         }
     }
 
     // Method to remove a client from the server
     public void removeClient(ServerThread serverThread) {
-        serverThreads.remove(serverThread);
+        synchronized (serverThreads) {
+            serverThreads.remove(serverThread);
+        }
         GameRoom currentRoom = serverThread.getCurrentRoom();
         if (currentRoom != null) {
             currentRoom.removeClient(serverThread.getClientData());
@@ -93,5 +98,13 @@ public class Server {
         }
         Server server = new Server(port);
         server.start();
+    }
+
+    // Method to start game in a room (handle countdown and game start)
+    public void startGameInRoom(String roomName) {
+        GameRoom room = getRoom(roomName);
+        if (room != null && !room.isGameStarted()) {
+            room.startCountdown();  // Start countdown for this room
+        }
     }
 }

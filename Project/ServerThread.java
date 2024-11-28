@@ -155,6 +155,12 @@ public class ServerThread extends Thread {
         System.out.println("Notification: " + payload.getMessage());
     }
 
+    // Handle the `START_GAME` payload to notify the clients to start the game
+    private void handleStartGamePayloadFromCountdown() {
+        Payload startGamePayload = new Payload("Server", "Game is starting now!", PayloadType.START_GAME);
+        sendPayload(startGamePayload);
+    }
+
     // Method to send a payload to the client
     public void sendPayload(Payload payload) {
         try {

@@ -19,6 +19,7 @@ public class GameRoom {
     private Timer roundTimer;
     private List<ClientData> answeredClients; // Track clients who answered
     private long questionStartTime; // Track when the current question was broadcasted
+    private boolean gameStarted; // Track if the game has started
 
     // Constructor
     public GameRoom(String roomName) {
@@ -29,6 +30,7 @@ public class GameRoom {
         this.answeredClients = new ArrayList<>();
         this.currentRound = 0;
         this.roundTimer = new Timer();
+        this.gameStarted = false; // Initialize gameStarted to false
         // Load questions with hardcoded path
         loadQuestions("Project/questions.txt");
     }
@@ -58,27 +60,50 @@ public class GameRoom {
         }
     }
 
-    // Method to notify all players when a player locks in an answer
-    public void notifyPlayersAnswerLocked(ClientData player) {
-        String message = player.getName() + " has locked in an answer.";
-        Payload payload = new Payload("Server", message, PayloadType.NOTIFICATION);
-        for (ClientData client : clients) {
-            client.getServerThread().sendPayload(payload);
-        }
-    }
-
     // Method to mark a client as ready
     public void markClientReady(ClientData client) {
         if (!readyClients.contains(client)) {
             readyClients.add(client);
             System.out.println(client.getName() + " is marked as ready.");
 
-            // If all clients in the room are ready, start the game
-            if (readyClients.size() == clients.size()) {
-                System.out.println("All players are ready. Starting the game.");
-                startFirstRound();
+            // If all clients in the room are ready and the game hasn't started, start the countdown
+            if (readyClients.size() == clients.size() && !gameStarted) {
+                System.out.println("All players are ready. Starting the countdown.");
+                startCountdown();
             }
         }
+    }
+
+    // Method to start the countdown before the game starts
+    public void startCountdown() {
+        Timer countdownTimer = new Timer();
+        countdownTimer.scheduleAtFixedRate(new TimerTask() {
+            int countdown = 3;
+
+            @Override
+            public void run() {
+                if (countdown > 0) {
+                    String message = "Game starts in: " + countdown + "...";
+                    Payload payload = new Payload("Server", message, PayloadType.NOTIFICATION);
+                    for (ClientData client : clients) {
+                        client.getServerThread().sendPayload(payload);
+                    }
+                    countdown--;
+                } else {
+                    System.out.println("Countdown complete. Starting the game.");
+                    countdownTimer.cancel();
+                    gameStarted = true; // Set game status to started
+
+                    // Notify all clients that the game has started
+                    Payload startGamePayload = new Payload("Server", "Game has started!", PayloadType.START_GAME);
+                    for (ClientData client : clients) {
+                        client.getServerThread().sendPayload(startGamePayload);
+                    }
+
+                    startFirstRound();
+                }
+            }
+        }, 0, 1000); // 1 second interval
     }
 
     // Method to start the first round
@@ -87,7 +112,7 @@ public class GameRoom {
         if (questionList.isEmpty()) {
             loadQuestions("Project/questions.txt");
         }
-        
+
         if (!questionList.isEmpty()) {
             currentRound++;
             System.out.println("Starting round " + currentRound); // Debug message
@@ -120,20 +145,23 @@ public class GameRoom {
         System.out.println("Broadcasting question to clients: " + question.getQuestionText()); // Debug message
     }
 
-    // Method to start the round timer with periodic updates to clients
+    // Method to start the round timer for each question
     private void startRoundTimer() {
-        long roundDuration = 50000; // 50 seconds per round
-        long updateInterval = 5000; // Update every 5 seconds
+        long roundDuration = 30000; // 30 seconds per question
+        long updateInterval = 1000; // Update every second
 
         roundTimer.scheduleAtFixedRate(new TimerTask() {
             long timeRemaining = roundDuration;
 
             @Override
             public void run() {
-                timeRemaining -= updateInterval;
                 if (timeRemaining > 0) {
-                    // Commenting out time update broadcast for now
-                    // broadcastTimeUpdate(timeRemaining);
+                    // Notify clients about time remaining
+                    TimePayload timePayload = new TimePayload("Server", "Time Update", PayloadType.TIME, timeRemaining);
+                    for (ClientData client : clients) {
+                        client.getServerThread().sendPayload(timePayload);
+                    }
+                    timeRemaining -= updateInterval;
                 } else {
                     System.out.println("Round timer expired.");
                     endRound();
@@ -141,6 +169,15 @@ public class GameRoom {
                 }
             }
         }, 0, updateInterval);
+    }
+
+    // Method to notify all players when a player locks in an answer
+    private void notifyPlayersAnswerLocked(ClientData player) {
+        String message = player.getName() + " has locked in an answer.";
+        Payload payload = new Payload("Server", message, PayloadType.NOTIFICATION);
+        for (ClientData client : clients) {
+            client.getServerThread().sendPayload(payload);
+        }
     }
 
     // Method to process a player's answer
@@ -188,9 +225,9 @@ public class GameRoom {
 
     // Method to calculate points based on response time
     private int calculatePoints(long responseTime) {
-        if (responseTime <= 10000) { // If answered within 10 seconds
+        if (responseTime <= 5000) { // If answered within 5 seconds
             return 20; // Fast response, higher points
-        } else if (responseTime <= 30000) { // If answered within 30 seconds
+        } else if (responseTime <= 15000) { // If answered within 15 seconds
             return 10; // Medium response, standard points
         } else {
             return 5; // Slow response, fewer points
@@ -243,6 +280,7 @@ public class GameRoom {
         questionList.clear(); // Clear previous questions
         loadQuestions("Project/questions.txt"); // Reload questions for the next session
         System.out.println("Game reset. Ready for a new session.");
+        gameStarted = false; // Reset game status
     }
 
     // Method to shift all players back to ready phase
@@ -254,6 +292,11 @@ public class GameRoom {
             client.getServerThread().sendPayload(readyPayload);
         }
         System.out.println("Players are shifted back to the ready phase.");
+    }
+
+    // Method to check if the game has started
+    public boolean isGameStarted() {
+        return gameStarted;
     }
 
     // Method to add a client to the room

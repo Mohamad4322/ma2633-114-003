@@ -13,5 +13,6 @@ public enum PayloadType {
     READY,        
     TIME,
     NOTIFICATION,
-    RESET_POINTS 
+    RESET_POINTS,
+    QUESTION_TIMER
 }
