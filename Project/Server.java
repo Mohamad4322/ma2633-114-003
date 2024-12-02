@@ -14,6 +14,7 @@ public class Server {
     private List<ServerThread> serverThreads; // List of all active client threads
     private Map<String, GameRoom> gameRooms; // Map to store all game rooms by room name
     private GameRoom lobby;
+    private long startTime; // Server start time
 
     // Constructor
     public Server(int port) {
@@ -22,6 +23,7 @@ public class Server {
         this.gameRooms = new ConcurrentHashMap<>(); // Concurrent map to store rooms
         this.lobby = new GameRoom("Lobby");
         gameRooms.put("Lobby", lobby); // Initialize the Lobby
+        this.startTime = System.currentTimeMillis(); // Record the start time
     }
 
     // Method to start the server
@@ -81,23 +83,53 @@ public class Server {
         System.out.println("Client disconnected: " + serverThread.getClientData().getName());
     }
 
+    public void stop() {
+        synchronized (serverThreads) {
+            for (ServerThread serverThread : serverThreads) {
+                serverThread.disconnect();
+            }
+        }
+    }
+
     // Getter for the lobby
     public GameRoom getLobby() {
         return lobby;
     }
 
+    // Getter for server threads
+    public List<ServerThread> getServerThreads() {
+        return serverThreads;
+    }
+
+    // Getter for start time
+    public long getStartTime() {
+        return startTime;
+    }
+
     // Main method to start the server
     public static void main(String[] args) {
         int port = 12345; // Default port
+        boolean useUI = true; // Default to UI mode
         if (args.length > 0) {
-            try {
-                port = Integer.parseInt(args[0]);
-            } catch (NumberFormatException e) {
-                System.err.println("Invalid port number. Using default port " + port);
+            for (String arg : args) {
+                if (arg.equalsIgnoreCase("--headless")) {
+                    useUI = false;
+                } else if (arg.startsWith("--port=")) {
+                    try {
+                        port = Integer.parseInt(arg.split("=")[1]);
+                    } catch (NumberFormatException e) {
+                        System.err.println("Invalid port number. Using default port " + port);
+                    }
+                }
             }
         }
         Server server = new Server(port);
-        server.start();
+        if (useUI) {
+            System.out.println("Starting server with UI...");
+            ServerUI.launch(server); // Start Swing UI
+        } else {
+            server.start(); // Start headless mode
+        }
     }
 
     // Method to start game in a room (handle countdown and game start)

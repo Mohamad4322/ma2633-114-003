@@ -1,10 +1,11 @@
 package Project;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import javax.swing.SwingUtilities;
 
@@ -17,19 +18,15 @@ public class Client {
     private GameUI gameUI; // Reference to GameUI
 
     // Constructor
-    public Client(String host, int port, GameUI gameUI) {
-        try {
-            this.gameUI = gameUI; // Assign the GameUI reference
-            socket = new Socket(host, port);
-            out = new ObjectOutputStream(socket.getOutputStream());
-            in = new ObjectInputStream(socket.getInputStream());
-            playerPoints = new HashMap<>(); // Initialize the player points map
-            System.out.println("Connected to server at " + host + ":" + port);
-            new Thread(new ServerListener()).start(); // Start listening to server messages
-        } catch (IOException e) {
-            System.err.println("Unable to connect to server: " + e.getMessage());
-            System.exit(1);
-        }
+    public Client(GameUI gameUI) {
+        // try {
+        //     this.gameUI = gameUI; // Assign the GameUI reference
+            
+        // } catch (IOException e) {
+        //     System.err.println("Unable to connect to server: " + e.getMessage());
+        //     System.exit(1);
+        // }
+        this.gameUI = gameUI;
     }
 
     // Method to set client name
@@ -38,12 +35,22 @@ public class Client {
     }
 
     // Method to connect to the server (called from UI)
-    public void connect() {
+    public void connect(String host, int port) {
         if (clientId == null) {
             System.out.println("Please set your name first.");
         } else {
-            Payload payload = new Payload(clientId, "Connecting", PayloadType.CONNECT);
-            sendPayload(payload);
+            try {
+                socket = new Socket(host, port);
+                out = new ObjectOutputStream(socket.getOutputStream());
+                in = new ObjectInputStream(socket.getInputStream());
+                playerPoints = new HashMap<>(); // Initialize the player points map
+                System.out.println("Connected to server at " + host + ":" + port);
+                new Thread(new ServerListener()).start(); // Start listening to server messages
+                Payload payload = new Payload(clientId, "Connecting", PayloadType.CONNECT);
+                sendPayload(payload);
+            } catch (IOException e) {
+                System.err.println("Unable to connect to server: " + e.getMessage());
+            }
         }
     }
 
@@ -68,7 +75,16 @@ public class Client {
             System.out.println("Joined room '" + roomName + "'.");
         }
     }
-
+    //method to join room as spectator
+    public void joinRoomAsSpectator(String roomName){
+        if (roomName == null || roomName.isEmpty()) {
+            System.out.println("Room name cannot be empty.");
+        } else {
+            Payload payload = new Payload(clientId, roomName, PayloadType.JOIN_ROOM_AS_SPECTATOR);
+            sendPayload(payload);
+            System.out.println("Joined room '" + roomName + "'.");
+        }
+    }
     // Method to mark the client as ready
     public void markReady() {
         if (clientId == null) {
@@ -85,7 +101,17 @@ public class Client {
         Payload payload = new Payload(clientId, answer, PayloadType.ANSWER);
         sendPayload(payload);
     }
+    
+    // Method to send away status
+    public void sendAwayStatus(boolean isAway) {
+        Payload payload = new Payload(clientId, String.valueOf(isAway), PayloadType.AWAY_STATUS);
+        sendPayload(payload);
+    }
 
+    public void setSelectedCategories(List <String> selectedCategories){
+        Payload payload = new Payload(clientId, selectedCategories.toString(), PayloadType.SELECTED_CATEGORIES);
+        sendPayload(payload);
+    }
     // Method to send a payload to the server
     private void sendPayload(Payload payload) {
         try {
@@ -109,7 +135,13 @@ public class Client {
                     } else if (response instanceof PointsPayload) {
                         PointsPayload pointsPayload = (PointsPayload) response;
                         playerPoints.put(pointsPayload.getClientId(), pointsPayload.getPoints());
-                        GameUI.updatePlayerPoints(pointsPayload.getClientId(), pointsPayload.getPoints());
+                        GameUI.updatePlayerPoints(playerPoints);
+                    }
+                    else if (response instanceof TimePayload) {
+                            System.out.println("Received time payload");
+                            TimePayload timePayload = (TimePayload) response;
+                            GameUI.updateTimer((int) (timePayload.getTimeRemaining() / 1000));
+                    
                     } else if (response instanceof Payload) {
                         Payload payload = (Payload) response;
                         switch (payload.getType()) {
@@ -133,13 +165,17 @@ public class Client {
                             case QUESTION_TIMER:
                                 handleQuestionTimer(payload); // Handle question timer countdown
                                 break;
+                            case READY:
+                                System.out.println("Player " + payload.getClientId() + " is ready.");
+                                SwingUtilities.invokeLater(() -> gameUI.updateToReadyCheckPanel());
+                                break;
                             default:
-                                System.out.println(payload.getMessage());
+                                System.out.println(payload);
                                 break;
                         }
-                    } else if (response instanceof TimePayload) {
-                        TimePayload timePayload = (TimePayload) response;
-                        GameUI.updateTimer((int) (timePayload.getTimeRemaining() / 1000));
+                    }   
+                    else {
+                        System.out.println("Unknown response from server: " + response);
                     }
                 }
             } catch (IOException | ClassNotFoundException e) {

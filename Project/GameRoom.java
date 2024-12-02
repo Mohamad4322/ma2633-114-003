@@ -140,7 +140,15 @@ public class GameRoom {
     private void broadcastQuestionToClients(Question question) {
         QAPayload payload = new QAPayload("Server", "New Question", PayloadType.QUESTION, question.getQuestionText(), question.getAnswerOptions().toArray(new String[0]));
         for (ClientData client : clients) {
-            client.getServerThread().sendPayload(payload);
+            if (client.isAway()) {
+                // Skip their turn and notify others
+                String message = client.getName() + " is away and their turn is skipped.";
+                Payload skipTurnPayload = new Payload("Server", message, PayloadType.NOTIFICATION);
+                client.getServerThread().sendPayload(skipTurnPayload);
+            }
+            else {
+                client.getServerThread().sendPayload(payload);
+            }
         }
         System.out.println("Broadcasting question to clients: " + question.getQuestionText()); // Debug message
     }
@@ -202,6 +210,13 @@ public class GameRoom {
                 if (selectedAnswer.equalsIgnoreCase(currentQuestion.getCorrectAnswer())) {
                     int pointsAwarded = calculatePoints(responseTime); // Calculate points based on response time
                     client.addPoints(pointsAwarded);
+                    //sendnotification to all clients
+                   
+                    for (ClientData c : clients) {
+                        String notificationMessage = client.getName() + " answered correctly and earned " + pointsAwarded + " points.";
+                        Payload notification = new Payload("Server", notificationMessage, PayloadType.NOTIFICATION);
+                        c.getServerThread().sendPayload(notification);
+                    }
                     System.out.println(client.getName() + " answered correctly and earned " + pointsAwarded + " points.");
                 } else {
                     System.out.println(client.getName() + " answered incorrectly.");
@@ -257,8 +272,10 @@ public class GameRoom {
     // Method to sync points to all clients
     private void syncPointsToClients() {
         for (ClientData client : clients) {
-            PointsPayload pointsPayload = new PointsPayload("Server", "Points Update", PayloadType.POINTS, client.getPoints());
-            client.getServerThread().sendPayload(pointsPayload);
+            PointsPayload pointsPayload = new PointsPayload(client.getName(), "Points Update", PayloadType.POINTS, client.getPoints());
+            for (ClientData c : clients) {
+                c.getServerThread().sendPayload(pointsPayload);
+            }
         }
     }
 
@@ -267,11 +284,18 @@ public class GameRoom {
         System.out.println("Game session ended.");
         // Send final scoreboard to all clients
         for (ClientData client : clients) {
-            PointsPayload pointsPayload = new PointsPayload("Server", "Final Score", PayloadType.POINTS, client.getPoints());
+            PointsPayload pointsPayload = new PointsPayload(client.getName(), "Final Score", PayloadType.POINTS, client.getPoints());
             client.getServerThread().sendPayload(pointsPayload);
         }
         resetGame();
         shiftToReadyPhase();
+        //send payload to all clients to come back to ready phase
+        Payload readyPayload = new Payload("Server", "Game is ready for a new session", PayloadType.READY);
+        for (ClientData client : clients) {
+            client.getServerThread().sendPayload(readyPayload);
+        }
+
+
     }
 
     // Method to reset the game
@@ -280,6 +304,11 @@ public class GameRoom {
         questionList.clear(); // Clear previous questions
         loadQuestions("Project/questions.txt"); // Reload questions for the next session
         System.out.println("Game reset. Ready for a new session.");
+        //make payload to send to all clients to reset the clients points
+        for (ClientData client : clients) {
+            Payload pointsPayload = new Payload(client.getName(), "Reset Points", PayloadType.RESET_POINTS);
+            client.getServerThread().sendPayload(pointsPayload);
+        }
         gameStarted = false; // Reset game status
     }
 
@@ -320,6 +349,17 @@ public class GameRoom {
         }
     }
 
+    //method to add spector to the roo
+    public void addSpectator(ClientData client) {
+        //send notification to all clients that a spectator has joined
+        Payload notification = new Payload("Server", client.getName() + " joined the room as a spectator: " + roomName, PayloadType.NOTIFICATION);
+        for (ClientData c : clients) {
+            c.getServerThread().sendPayload(notification);
+        }
+        System.out.println(client.getName() + " joined the room as a spectator: " + roomName);
+        addClient(client);
+    }
+
     // Method to remove a client from the room
     public void removeClient(ClientData client) {
         clients.remove(client);
@@ -330,8 +370,18 @@ public class GameRoom {
     // Method to sync points to a specific client
     private void syncPointsToClient(ClientData client) {
         for (ClientData existingClient : clients) {
-            PointsPayload pointsPayload = new PointsPayload("Server", "Points Update", PayloadType.POINTS, existingClient.getPoints());
+            PointsPayload pointsPayload = new PointsPayload(client.getName(), "Points Update", PayloadType.POINTS, client.getPoints());
             client.getServerThread().sendPayload(pointsPayload);
+        }
+    }
+    public void markClientAway(ClientData client, boolean isAway) {
+        client.setAway(isAway);
+        String message = client.getName() + " is " + (isAway ? "away" : "no longer away");
+        Payload awayStatusPayload = new Payload("Server", message, PayloadType.NOTIFICATION);
+        
+        // Send notification to all clients
+        for (ClientData c : clients) {
+            c.getServerThread().sendPayload(awayStatusPayload);
         }
     }
 

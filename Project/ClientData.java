@@ -3,6 +3,7 @@ package Project;
 public class ClientData {
     private String name;
     private ServerThread serverThread;
+    private boolean isAway;
     private int points;
 
     // Constructor
@@ -11,6 +12,15 @@ public class ClientData {
         this.serverThread = serverThread;
         this.points = 0; // Initialize points to zero
     }
+    
+    public boolean isAway() {
+        return isAway;
+    }
+
+    public void setAway(boolean isAway) {
+        this.isAway = isAway;
+    }
+
 
     // Getter for name
     public String getName() {

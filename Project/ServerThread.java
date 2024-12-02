@@ -64,6 +64,9 @@ public class ServerThread extends Thread {
             case JOIN_ROOM:
                 handleJoinRoomPayload(payload);
                 break;
+            case JOIN_ROOM_AS_SPECTATOR:
+                handleJoinRoomAsSpectatorPayload(payload);
+                break;
             case ANSWER:
                 handleAnswerPayload(payload);
                 break;
@@ -72,6 +75,9 @@ public class ServerThread extends Thread {
                 break;
             case READY:
                 handleReadyPayload(payload);
+                break;
+            case AWAY_STATUS:
+                handleAwayStatusPayload(payload);
                 break;
             case NOTIFICATION:
                 handleNotificationPayload(payload);
@@ -114,6 +120,24 @@ public class ServerThread extends Thread {
         }
     }
 
+    // Handle join room as spectator payload
+    private void handleJoinRoomAsSpectatorPayload(Payload payload) {
+        String roomName = payload.getMessage();
+        GameRoom room = server.getRoom(roomName);
+        if (room != null) {
+            room.addSpectator(clientData);
+            System.out.println(clientData.getName() + " joined the room as a spectator: " + roomName);
+        } else {
+            sendPayload(new Payload("Server", "Room not found. Please try again.", PayloadType.NOTIFICATION));
+        }
+    }
+    private void handleAwayStatusPayload(Payload payload) {
+        System.out.println("Away status received: " + payload.getMessage());
+        boolean isAway = Boolean.parseBoolean(payload.getMessage());
+        if (currentRoom != null && currentRoom instanceof GameRoom) {
+            ((GameRoom) currentRoom).markClientAway(clientData, isAway);
+        }
+    }
     // Helper method to join a room
     private void joinRoom(String roomName) {
         if (currentRoom != null) {
@@ -168,6 +192,15 @@ public class ServerThread extends Thread {
             out.flush();
         } catch (IOException e) {
             System.err.println("Error sending payload to client: " + e.getMessage());
+        }
+    }
+
+    // Method to disconnect the client
+    public void disconnect() {
+        try {
+            socket.close();
+        } catch (IOException e) {
+            System.err.println("Error disconnecting client: " + e.getMessage());
         }
     }
 }
