@@ -45,4 +45,3 @@ public class Payload implements Serializable {
         return "Payload [clientId=" + clientId + ", message=" + message + ", type=" + type + "]";
     }
 }
-// ma2633 || 11/12
