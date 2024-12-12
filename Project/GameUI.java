@@ -2,6 +2,7 @@ package Project;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
+
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -38,8 +39,6 @@ public class GameUI {
     private JLabel timerLabel;
     private JList<String> categoryList; // List to hold category options
 
-    private JTextArea resultsArea; // Text area to display results
-
     private Client client;
 
     public GameUI(String host, int port) {
@@ -75,16 +74,16 @@ public class GameUI {
         connectionPanel.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5); // Add spacing between components
-
+    
         JLabel usernameLabel = new JLabel("Username:");
         usernameField = new JTextField(15); // Set a preferred column size
-
+    
         JLabel hostLabel = new JLabel("Host:");
         hostField = new JTextField("localhost", 15); // Set a preferred column size
-
+    
         JLabel portLabel = new JLabel("Port:");
         portField = new JTextField("12345", 15); // Set a preferred column size
-
+    
         connectButton = new JButton("Connect");
         connectButton.addActionListener(new ActionListener() {
             @Override
@@ -98,41 +97,42 @@ public class GameUI {
                 showPanel("Room"); // Show the room panel after connecting
             }
         });
-
+    
         // Add components to the panel with constraints
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.EAST;
         connectionPanel.add(usernameLabel, gbc);
-
+    
         gbc.gridx = 1;
         gbc.anchor = GridBagConstraints.WEST;
         connectionPanel.add(usernameField, gbc);
-
+    
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.anchor = GridBagConstraints.EAST;
         connectionPanel.add(hostLabel, gbc);
-
+    
         gbc.gridx = 1;
         gbc.anchor = GridBagConstraints.WEST;
         connectionPanel.add(hostField, gbc);
-
+    
         gbc.gridx = 0;
         gbc.gridy = 2;
         gbc.anchor = GridBagConstraints.EAST;
         connectionPanel.add(portLabel, gbc);
-
+    
         gbc.gridx = 1;
         gbc.anchor = GridBagConstraints.WEST;
         connectionPanel.add(portField, gbc);
-
+    
         gbc.gridx = 0;
         gbc.gridy = 3;
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         connectionPanel.add(connectButton, gbc);
     }
+
     // Method to create the room panel for creating or joining rooms
     private void createRoomPanel() {
         roomPanel = new JPanel();
@@ -164,6 +164,7 @@ public class GameUI {
             }
         });
 
+
         joinRoomButton = new JButton("Join Room");
         joinRoomButton.addActionListener(new ActionListener() {
             @Override
@@ -179,6 +180,7 @@ public class GameUI {
         });
 
         joinAsSpectatorButton = new JButton("Join as Spectator");
+
         joinAsSpectatorButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -191,6 +193,8 @@ public class GameUI {
                 }
             }
         });
+
+
 
         // Add components to the panel
         gbc.gridx = 0;
@@ -215,12 +219,12 @@ public class GameUI {
         gbc.gridy = 3;
         roomPanel.add(joinAsSpectatorButton, gbc);
     }
+    
 
     // Method to create the ready check panel
     private void createReadyCheckPanel() {
         readyCheckPanel = new JPanel();
         readyCheckPanel.setLayout(new GridBagLayout());
-
         readyCheckPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createLineBorder(Color.DARK_GRAY, 1),
             "Ready Check",
@@ -229,10 +233,10 @@ public class GameUI {
             new Font("Arial", Font.BOLD, 14),
             Color.BLUE
         ));
-
+    
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 15, 10, 15);
-
+    
         // Instructions Label
         JLabel instructionsLabel = new JLabel("Select categories and press Ready.");
         instructionsLabel.setFont(new Font("Arial", Font.BOLD, 12));
@@ -241,13 +245,14 @@ public class GameUI {
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         readyCheckPanel.add(instructionsLabel, gbc);
+    
         // Category Selection Panel
         JLabel categoryLabel = new JLabel("Select Categories:");
         categoryLabel.setFont(new Font("Arial", Font.BOLD, 12));
         gbc.gridy = 1;
         gbc.gridwidth = 1;
         readyCheckPanel.add(categoryLabel, gbc);
-
+    
         categoryList = new JList<>(new String[]{"Science", "History", "Geography", "Sports", "Movies"});
         categoryList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         categoryList.setVisibleRowCount(5);
@@ -255,7 +260,7 @@ public class GameUI {
         JScrollPane categoryScrollPane = new JScrollPane(categoryList);
         gbc.gridx = 1;
         readyCheckPanel.add(categoryScrollPane, gbc);
-
+    
         // Ready Button
         readyButton = new JButton("Ready");
         readyButton.setFont(new Font("Arial", Font.BOLD, 14));
@@ -277,15 +282,15 @@ public class GameUI {
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         readyCheckPanel.add(readyButton, gbc);
-
+    
         // Status Label
         readyStatusLabel = new JLabel("Waiting for other players...");
         readyStatusLabel.setFont(new Font("Arial", Font.ITALIC, 12));
         readyStatusLabel.setForeground(Color.GRAY);
         gbc.gridy = 3;
-        readyCheckPanel.add(readyStatusLabel, gbc);
 
-        // Add Button to Add Question
+        readyCheckPanel.add(readyStatusLabel, gbc);
+        //add button to add question
         JButton addQuestionButton = new JButton("Add Question");
         addQuestionButton.addActionListener(new ActionListener() {
             @Override
@@ -295,17 +300,7 @@ public class GameUI {
         });
         gbc.gridy = 4;
         readyCheckPanel.add(addQuestionButton, gbc);
-
-        // Results Area - to display round results directly in the ready panel
-        resultsArea = new JTextArea(5, 20);
-        resultsArea.setEditable(false);
-        resultsArea.setBorder(BorderFactory.createTitledBorder("Round Results"));
-        resultsArea.setVisible(false); // Initially hidden
-        gbc.gridy = 5;
-        gbc.gridwidth = 2;
-        readyCheckPanel.add(resultsArea, gbc);
     }
-
     // Method to create the Question Management Panel
     private void createQuestionManagementPanel() {
         questionManagementPanel = new JPanel();
@@ -367,7 +362,7 @@ public class GameUI {
 
             JOptionPane.showMessageDialog(frame, "Question added successfully!", "Success", JOptionPane.INFORMATION_MESSAGE);
 
-            // Show ready check panel after adding question
+            //show ready check panel after adding question
             showPanel("ReadyCheck");
         });
 
@@ -413,6 +408,7 @@ public class GameUI {
         gbc.gridwidth = 2;
         questionManagementPanel.add(saveQuestionButton, gbc);
     }
+
     // Method to trigger countdown after all players are ready
     public void startCountdown() {
         SwingUtilities.invokeLater(() -> {
@@ -440,38 +436,38 @@ public class GameUI {
     private void createGameAreaPanel() {
         gameAreaPanel = new JPanel();
         gameAreaPanel.setLayout(new BorderLayout());
-
+    
         // User List Panel
         userListPanel = new JPanel();
         userListPanel.setLayout(new BoxLayout(userListPanel, BoxLayout.Y_AXIS));
         userListPanel.setBorder(BorderFactory.createTitledBorder("Users"));
         JScrollPane userListScroll = new JScrollPane(userListPanel);
         userListScroll.setPreferredSize(new Dimension(200, 400));
-
+    
         // Game Events Panel
         gameEventPanel = new JPanel();
         gameEventPanel.setLayout(new BoxLayout(gameEventPanel, BoxLayout.Y_AXIS));
         gameEventPanel.setBorder(BorderFactory.createTitledBorder("Game Events"));
         JScrollPane gameEventScroll = new JScrollPane(gameEventPanel);
         gameEventScroll.setPreferredSize(new Dimension(200, 400));
-
+    
         // Question Area
         JPanel questionArea = new JPanel();
         questionArea.setLayout(new GridBagLayout());
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
         gbc.fill = GridBagConstraints.HORIZONTAL;
-
-        // Button to mark away from the game
+        //button to away from the game
         JButton awayButton = new JButton("Away");
         awayButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (awayButton.getText().equals("Away")) {
+                 if (awayButton.getText().equals("Away")) {
                     awayButton.setText("Back");
                     client.sendAwayStatus(true);
                 } else {
                     awayButton.setText("Away");
+                    //send away status to server
                     client.sendAwayStatus(false);
                 }
             }
@@ -482,6 +478,7 @@ public class GameUI {
         gbc.gridwidth = 2;
         gbc.anchor = GridBagConstraints.CENTER;
         questionArea.add(awayButton, gbc);
+
         // Question Category Label
         JLabel questionCategoryLabel = new JLabel("Category: ");
         questionCategoryLabel.setFont(new Font("Arial", Font.BOLD, 14));
@@ -489,13 +486,13 @@ public class GameUI {
         gbc.gridy = 0;
         gbc.gridwidth = 2;
         questionArea.add(questionCategoryLabel, gbc);
-        
+    
         // Current Question Label
         questionLabel = new JLabel("Current Question: ");
         questionLabel.setFont(new Font("Arial", Font.BOLD, 16));
         gbc.gridy = 1;
         questionArea.add(questionLabel, gbc);
-
+    
         // Answer Buttons Panel
         JPanel answerPanel = new JPanel();
         answerPanel.setLayout(new GridLayout(2, 2, 10, 10));
@@ -510,13 +507,13 @@ public class GameUI {
         gbc.gridwidth = 1;
         gbc.gridheight = 1;
         questionArea.add(answerPanel, gbc);
-
+    
         // Timer Label
         timerLabel = new JLabel("Time Remaining: ");
         timerLabel.setFont(new Font("Arial", Font.BOLD, 14));
         gbc.gridy = 3;
         questionArea.add(timerLabel, gbc);
-
+    
         // Add Panels to Game Area
         gameAreaPanel.add(userListScroll, BorderLayout.WEST);
         gameAreaPanel.add(gameEventScroll, BorderLayout.EAST);
@@ -537,18 +534,25 @@ public class GameUI {
         CardLayout cl = (CardLayout) (frame.getContentPane().getLayout());
         cl.show(frame.getContentPane(), panelName);
     }
-
     public void updateToReadyCheckPanel() {
+        //clear the user list panel before updating and show the ready check panel and reset the ready button
         SwingUtilities.invokeLater(() -> {
             userListPanel.removeAll();
             readyButton.setEnabled(true);
             readyStatusLabel.setText("Waiting for other players...");
-            resultsArea.setText("");  // Clear previous round results
-            resultsArea.setVisible(false); // Hide results initially
             showPanel("ReadyCheck");
         });
     }
 
+    public static void showFinalScore(Map<String, Integer> playerPoints) {
+        SwingUtilities.invokeLater(() -> {
+            StringBuilder finalScore = new StringBuilder("Final Scores:\n");
+            for (Map.Entry<String, Integer> entry : playerPoints.entrySet()) {
+                finalScore.append(entry.getKey()).append(": ").append(entry.getValue()).append(" points\n");
+            }
+            JOptionPane.showMessageDialog(getUIInstance().frame, finalScore.toString(), "Game Over", JOptionPane.INFORMATION_MESSAGE);
+        });
+    }
     // Static methods to update the UI from the client
     public static void updateQuestion(String question, String[] options) {
         SwingUtilities.invokeLater(() -> {
@@ -564,25 +568,11 @@ public class GameUI {
         });
     }
 
-    // Modified Method to show result in the Ready Check Panel
-    public static void showRoundResults(Map<String, Integer> results) {
-        SwingUtilities.invokeLater(() -> {
-            GameUI uiInstance = getUIInstance();
-            if (uiInstance != null) {
-                StringBuilder resultText = new StringBuilder();
-                for (Map.Entry<String, Integer> entry : results.entrySet()) {
-                    resultText.append(entry.getKey()).append(": ").append(entry.getValue()).append(" points\n");
-                }
-                uiInstance.resultsArea.setText(resultText.toString());
-                uiInstance.resultsArea.setVisible(true); // Show results after a round ends
-            }
-        });
-    }
-
     public static void updatePlayerPoints(Map<String, Integer> playerPoints) {
         SwingUtilities.invokeLater(() -> {
             GameUI uiInstance = getUIInstance();
             if (uiInstance != null) {
+                // Clear the user list panel before updating
                 uiInstance.userListPanel.removeAll();
                 for (Map.Entry<String, Integer> entry : playerPoints.entrySet()) {
                     JLabel userLabel = new JLabel(entry.getKey() + ": " + entry.getValue() + " points");
@@ -590,6 +580,7 @@ public class GameUI {
                 }
                 uiInstance.userListPanel.revalidate();
                 uiInstance.userListPanel.repaint();
+
             }
         });
     }
@@ -627,7 +618,6 @@ public class GameUI {
             }
         });
     }
-
     // Method to get the static GameUI instance
     private static GameUI getUIInstance() {
         return instance;

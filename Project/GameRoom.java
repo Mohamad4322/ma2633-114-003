@@ -287,13 +287,13 @@ public class GameRoom {
             PointsPayload pointsPayload = new PointsPayload(client.getName(), "Final Score", PayloadType.POINTS, client.getPoints());
             client.getServerThread().sendPayload(pointsPayload);
         }
-        resetGame();
         shiftToReadyPhase();
         //send payload to all clients to come back to ready phase
         Payload readyPayload = new Payload("Server", "Game is ready for a new session", PayloadType.READY);
         for (ClientData client : clients) {
             client.getServerThread().sendPayload(readyPayload);
         }
+        resetGame();
 
 
     }
