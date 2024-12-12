@@ -3,7 +3,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.Socket;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -168,6 +167,7 @@ public class Client {
                             case READY:
                                 System.out.println("Player " + payload.getClientId() + " is ready.");
                                 SwingUtilities.invokeLater(() -> gameUI.updateToReadyCheckPanel());
+                                GameUI.showFinalScore(playerPoints);
                                 break;
                             default:
                                 System.out.println(payload);

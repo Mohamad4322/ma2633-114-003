@@ -17,6 +17,5 @@ public enum PayloadType {
     RESET_POINTS,
     QUESTION_TIMER,
     AWAY_STATUS,
-    RESULTS,
     SELECTED_CATEGORIES
 }
